@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import Any
 
 from app.config import settings
+from app.services import metrics
 from app.services.openai_client import get_client
 
 # Tool type names to try, in order. The API has used both spellings.
@@ -61,6 +62,9 @@ def run_interview_search(company: str, role: str, seniority: str) -> dict[str, A
             text = getattr(response, "output_text", "") or ""
             if not text.strip():
                 continue
+            metrics.track_openai(
+                "interview_prep_search", settings.websearch_model, getattr(response, "usage", None)
+            )
             return {"text": text, "sources": _extract_sources(response)}
         except Exception as exc:  # unknown tool type, model access, etc.
             last_error = exc

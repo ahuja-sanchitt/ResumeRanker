@@ -4,7 +4,7 @@ from __future__ import annotations
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
 from app.models.schemas import AnalyzeResponse
-from app.services import scoring
+from app.services import metrics, scoring
 from app.services.cache import cache
 from app.services.embeddings import embedding_similarity_score
 from app.services.llm import analyze_resume_jd
@@ -40,7 +40,9 @@ async def analyze(resume: UploadFile = File(...), jd: str = Form(...)) -> Analyz
     key = "analyze:" + cache.fingerprint(data, jd_norm)
     cached = cache.get_json(key)
     if cached is not None:
+        metrics.track_cache("analyze", hit=True)
         return AnalyzeResponse(**cached, cached=True)
+    metrics.track_cache("analyze", hit=False)
 
     # --- hybrid scoring ---
     try:

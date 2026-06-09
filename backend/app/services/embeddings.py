@@ -10,6 +10,7 @@ from __future__ import annotations
 import math
 
 from app.config import settings
+from app.services import metrics
 from app.services.openai_client import get_client
 
 # Bound input size to keep token usage and latency predictable.
@@ -22,6 +23,7 @@ def embed_texts(texts: list[str]) -> list[list[float]]:
         model=settings.embedding_model,
         input=[t[:MAX_CHARS] for t in texts],
     )
+    metrics.track_openai("embeddings", settings.embedding_model, getattr(resp, "usage", None))
     return [item.embedding for item in resp.data]
 
 

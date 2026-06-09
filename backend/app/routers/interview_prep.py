@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException
 
 from app.config import settings
 from app.models.schemas import InterviewPrepRequest, InterviewPrepResponse
-from app.services import llm
+from app.services import llm, metrics
 from app.services.cache import cache
 from app.services.web_search import WebSearchError, run_interview_search
 
@@ -24,7 +24,9 @@ def interview_prep(req: InterviewPrepRequest) -> InterviewPrepResponse:
     if not req.force_refresh:
         cached = cache.get_json(key)
         if cached is not None:
+            metrics.track_cache("interview_prep", hit=True)
             return InterviewPrepResponse(**cached, cached=True)
+    metrics.track_cache("interview_prep", hit=False)
 
     # Live web search -> structured summary.
     try:

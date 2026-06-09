@@ -1,0 +1,11 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: resume-ranker-api
+    metrics_path: /metrics
+    static_configs:
+      # host.docker.internal lets the container reach uvicorn running on your
+      # host machine (Docker Desktop on Windows/Mac). If the backend also runs
+      # in a container on this network, use that service name + port instead.
+      - targets: ["host.docker.internal:8000"]

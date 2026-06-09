@@ -1,0 +1,10 @@
+# Auto-loads any dashboard JSON in this folder on Grafana startup.
+apiVersion: 1
+
+providers:
+  - name: resume-ranker
+    type: file
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards
+      foldersFromFilesStructure: false

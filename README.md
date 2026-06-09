@@ -79,10 +79,37 @@ Open http://localhost:5173.
 
 **Frontend → Vercel.** Import the repo, set **Root Directory = `frontend`** (Vite is auto-detected), and add env var `VITE_API_BASE_URL` = your Render backend URL.
 
+## Observability (token usage + Grafana)
+
+Every OpenAI call's token usage is captured and exposed two ways:
+
+- **Structured logs** — each call logs `endpoint`, `model`, `prompt_tokens`, `completion_tokens`, and `cached_tokens` (stdout, so Render captures it).
+- **Prometheus metrics** at **`GET /metrics`**:
+  - `openai_tokens_total{endpoint, model, kind}` — `kind` ∈ `prompt | completion | cached`
+  - `openai_requests_total{endpoint, model}`
+  - `app_cache_events_total{endpoint, result}` — `result` ∈ `hit | miss`
+  - `http_request_seconds` — request-latency histogram
+
+> **On prompt caching:** OpenAI caches a request's static prefix automatically, but only when that prefix is ≥1024 tokens — our system prompts are shorter, so it rarely triggers here. We log `cached_tokens` so it's visible when it does. The bigger lever is the app's own SHA-256 cache, which skips the whole call for exact repeats.
+
+### Run Grafana locally
+
+Needs Docker Desktop. With the backend running on the host:
+
+```bash
+cd monitoring
+docker compose up
+```
+- **Grafana** → http://localhost:3000 (admin / admin) — the **"Resume Ranker — Observability"** dashboard is auto-provisioned (token rates, cache hit ratio, request rate, p95 latency).
+- **Prometheus** → http://localhost:9090
+
+(No Docker? You can still read raw metrics at `/metrics`, or point Grafana Cloud's free tier at the deployed `/metrics` URL.)
+
 ## Repo layout
 ```
-backend/   FastAPI app (routers, services: pdf_extract, embeddings, llm, web_search, scoring, cache)
-frontend/  Vite + React (Résumé Match + Interview Prep)
+backend/     FastAPI app (routers, services: pdf_extract, embeddings, llm, web_search, scoring, cache, metrics)
+frontend/    Vite + React (Résumé Match + Interview Prep)
+monitoring/  Prometheus + Grafana docker-compose, scrape config, provisioned dashboard
 render.yaml  Render blueprint for the backend
 ```
 

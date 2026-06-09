@@ -11,6 +11,7 @@ import json
 from typing import Any
 
 from app.config import settings
+from app.services import metrics
 from app.services.openai_client import get_client
 
 RESUME_MAX_CHARS = 8000
@@ -20,11 +21,18 @@ SEARCH_MAX_CHARS = 12000
 VALID_SENIORITY = {"junior", "mid", "senior"}
 
 
-def _chat_json(system: str, user: str, *, model: str | None = None) -> dict[str, Any]:
-    """Call chat completions in JSON mode and parse the result into a dict."""
+def _chat_json(
+    system: str, user: str, *, model: str | None = None, endpoint: str = "chat"
+) -> dict[str, Any]:
+    """Call chat completions in JSON mode and parse the result into a dict.
+
+    The static `system` message is placed first so it forms a stable prefix —
+    the shape OpenAI's automatic prompt caching can reuse when it's long enough.
+    """
     client = get_client()
+    chosen_model = model or settings.chat_model
     resp = client.chat.completions.create(
-        model=model or settings.chat_model,
+        model=chosen_model,
         messages=[
             {"role": "system", "content": system},
             {"role": "user", "content": user},
@@ -32,6 +40,7 @@ def _chat_json(system: str, user: str, *, model: str | None = None) -> dict[str,
         response_format={"type": "json_object"},
         temperature=0.2,
     )
+    metrics.track_openai(endpoint, chosen_model, getattr(resp, "usage", None))
     content = resp.choices[0].message.content or "{}"
     try:
         data = json.loads(content)
@@ -76,7 +85,7 @@ def analyze_resume_jd(resume_text: str, jd_text: str) -> dict[str, Any]:
         f"RÉSUMÉ:\n{resume_text[:RESUME_MAX_CHARS]}\n\n"
         "Return the JSON object now."
     )
-    data = _chat_json(_ANALYZE_SYSTEM, user)
+    data = _chat_json(_ANALYZE_SYSTEM, user, endpoint="analyze")
     return {
         "matched_skills": _as_str_list(data.get("matched_skills")),
         "missing_skills": _as_str_list(data.get("missing_skills")),
@@ -109,7 +118,7 @@ def _heuristic_seniority(role: str) -> str:
 
 def normalize_role(role: str) -> str:
     try:
-        data = _chat_json(_NORMALIZE_SYSTEM, f'Job title: "{role}"')
+        data = _chat_json(_NORMALIZE_SYSTEM, f'Job title: "{role}"', endpoint="normalize_role")
         seniority = str(data.get("seniority", "")).lower().strip()
         if seniority in VALID_SENIORITY:
             return seniority
@@ -141,7 +150,7 @@ def summarize_prep(company: str, role: str, seniority: str, search_text: str, so
         f"KNOWN SOURCE URLS:\n{json.dumps(sources)}\n\n"
         "Return the JSON object now."
     )
-    data = _chat_json(_PREP_SYSTEM, user, model=settings.chat_model)
+    data = _chat_json(_PREP_SYSTEM, user, model=settings.chat_model, endpoint="interview_prep")
     rounds_raw = data.get("rounds")
     rounds: list[dict[str, str]] = []
     if isinstance(rounds_raw, list):
