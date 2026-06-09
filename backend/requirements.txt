@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+python-multipart
+python-dotenv
+openai
+redis
+pypdf
+# Optional: richer extraction fallback for messy PDFs (imported lazily if present)
+# pdfplumber
