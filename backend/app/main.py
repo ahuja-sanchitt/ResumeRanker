@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
+from app.routers import analyze, interview_prep
 from app.services.cache import cache
 
 app = FastAPI(
@@ -23,6 +24,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+app.include_router(analyze.router)
+app.include_router(interview_prep.router)
 
 
 @app.get("/health")

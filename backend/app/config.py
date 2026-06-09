@@ -43,6 +43,11 @@ class Settings:
     # --- Scoring ---
     # final = embedding_weight * embedding_score + (1 - embedding_weight) * llm_score
     embedding_weight: float = _get_float("EMBEDDING_WEIGHT", 0.6)
+    # OpenAI embeddings are anisotropic: even unrelated texts rarely score below
+    # ~0.6 cosine, and strong matches top out around ~0.9. Linearly rescale that
+    # band to 0-100 so the score is meaningfully spread, then clamp.
+    sim_floor: float = _get_float("SIM_FLOOR", 0.65)
+    sim_ceil: float = _get_float("SIM_CEIL", 0.90)
 
     # --- CORS ---
     cors_origins: list[str] = [

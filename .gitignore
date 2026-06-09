@@ -22,5 +22,8 @@ Thumbs.db
 .idea/
 .vscode/
 
+# Claude Code local settings (machine-specific)
+.claude/settings.local.json
+
 # Misc
 *.log

@@ -1,0 +1,21 @@
+# Render blueprint for the FastAPI backend.
+# In Render: New > Blueprint, point it at this repo. Set the secret env vars
+# (OPENAI_API_KEY, REDIS_URL, CORS_ORIGINS) in the dashboard — they're marked
+# sync:false so they are NOT read from this file.
+services:
+  - type: web
+    name: resume-ranker-api
+    runtime: python
+    rootDir: backend
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7        # Render may not yet ship 3.14; 3.12 is safe
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false           # e.g. https://your-app.vercel.app
