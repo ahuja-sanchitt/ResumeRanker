@@ -6,6 +6,8 @@ from __future__ import annotations
 
 import logging
 import time
+from logging.handlers import RotatingFileHandler
+from pathlib import Path
 
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,10 +17,35 @@ from app.routers import analyze, interview_prep
 from app.services import metrics
 from app.services.cache import cache
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(name)s | %(message)s",
-)
+
+def _setup_logging() -> None:
+    """Log to stdout (Render captures this) AND a rotating file (for Loki/Alloy).
+
+    Lines use a key=value style (e.g. `openai_usage endpoint=analyze prompt_tokens=1200`)
+    so Loki's logfmt parser can turn them into queryable fields in Grafana.
+    """
+    fmt = logging.Formatter("%(asctime)s %(levelname)s %(name)s | %(message)s")
+    root = logging.getLogger()
+    root.setLevel(logging.INFO)
+
+    # Guard against duplicate handlers across uvicorn --reload restarts.
+    if any(isinstance(h, RotatingFileHandler) for h in root.handlers):
+        return
+
+    stream = logging.StreamHandler()
+    stream.setFormatter(fmt)
+    root.addHandler(stream)
+
+    log_dir = Path(__file__).resolve().parent.parent / "logs"
+    log_dir.mkdir(exist_ok=True)
+    file_handler = RotatingFileHandler(
+        log_dir / "app.log", maxBytes=2_000_000, backupCount=3, encoding="utf-8"
+    )
+    file_handler.setFormatter(fmt)
+    root.addHandler(file_handler)
+
+
+_setup_logging()
 
 app = FastAPI(
     title="AI Resume Ranker + Interview Co-Pilot",

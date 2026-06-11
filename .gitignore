@@ -25,5 +25,9 @@ Thumbs.db
 # Claude Code local settings (machine-specific)
 .claude/settings.local.json
 
-# Misc
+# Logs (shipped to Loki at runtime, not committed)
 *.log
+backend/logs/
+
+# Grafana Alloy config with real credentials — commit the .example template only
+monitoring/alloy/config.alloy
