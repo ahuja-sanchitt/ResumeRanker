@@ -31,3 +31,6 @@ backend/logs/
 
 # Grafana Alloy config with real credentials — commit the .example template only
 monitoring/alloy/config.alloy
+
+# Grafana Alloy runtime data (WAL, tail positions) — created where alloy.exe runs
+data-alloy/

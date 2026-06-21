@@ -170,3 +170,39 @@ def summarize_prep(company: str, role: str, seniority: str, search_text: str, so
         "difficulty_notes": str(data.get("difficulty_notes", "")).strip(),
         "sources": merged_sources,
     }
+
+
+# ---------- cold-email drafting ----------
+
+_COLD_EMAIL_SYSTEM = (
+    "You write concise, personalized cold emails for a job seeker reaching out to a "
+    "hiring contact. Respond ONLY with JSON: {\"subject\": string, \"body\": string}.\n"
+    "Rules:\n"
+    "- 110-160 words in the body; warm, specific, and respectful — not salesy or generic.\n"
+    "- Open with a genuine, specific reason for reaching out (tie to the company/role).\n"
+    "- Pull 1-2 concrete, relevant highlights from the résumé; do NOT invent anything.\n"
+    "- End with a low-pressure ask (a brief chat or a pointer to the right person).\n"
+    "- Address the contact by first name if provided. Sign off with a placeholder "
+    "[Your Name]. No attachments, no links, no fake metrics."
+)
+
+
+def draft_cold_email(
+    resume_text: str,
+    company: str,
+    contact_name: str = "",
+    contact_role: str = "",
+    jd_text: str = "",
+) -> dict[str, str]:
+    user = (
+        f"COMPANY: {company}\n"
+        f"CONTACT: {contact_name or '(unknown)'} — {contact_role or '(role unknown)'}\n\n"
+        f"TARGET ROLE / JD (optional):\n{jd_text[:JD_MAX_CHARS] if jd_text else '(none provided)'}\n\n"
+        f"RÉSUMÉ:\n{resume_text[:RESUME_MAX_CHARS]}\n\n"
+        "Write the cold email JSON now."
+    )
+    data = _chat_json(_COLD_EMAIL_SYSTEM, user, endpoint="cold_email")
+    return {
+        "subject": str(data.get("subject", "")).strip() or f"Interest in opportunities at {company}",
+        "body": str(data.get("body", "")).strip(),
+    }

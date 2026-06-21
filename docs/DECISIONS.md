@@ -50,3 +50,24 @@ newer entry that replaced it.
 **Why chosen:** The embedding score is an objective, stable, injection-resistant *anchor* that keeps the LLM's number honest; the LLM supplies the explainability (matched/missing skills, feedback) that an embedding can't. Surfacing all three sub-scores makes the result non-black-box — the product's core value prop, and the "don't trust the LLM's self-reported score, anchor it" interview story. Weights and the calibration band are configurable (`EMBEDDING_WEIGHT`, `SIM_FLOOR`, `SIM_CEIL`) so the blend can be tuned without code changes.
 
 ---
+
+## D-002 — Cold-email outreach: Hunter.io contacts + Gmail draft-only
+
+- **Date:** 2026-06-21
+- **Phase / area:** Cold-email feature — `backend/app/services/hunter.py`, `google_oauth.py`, `gmail.py`, `llm.draft_cold_email`; routers `google_auth.py`, `cold_email.py`
+- **Status:** Accepted
+- **Decision:** Add a cold-email co-pilot: discover engineering-manager/senior-dev contacts at the target company via Hunter.io, draft a tailored email from the résumé with the LLM, and create it as a **Gmail draft** (never auto-send) over Google OAuth — running in Google's "Testing" publishing mode.
+
+**Options considered:**
+
+| Option | Tradeoff |
+| --- | --- |
+| **Hunter.io API + Gmail draft-only + OAuth Testing mode** ✅ | Compliant contact discovery (free tier; returns name/role/seniority/department to filter for EMs), human-in-the-loop drafts, least-privilege `gmail.compose` scope, no verification needed for owner + ≤100 testers. **But** needs a Hunter key + a Google Cloud OAuth client, and isn't usable by the arbitrary public without Google's restricted-scope verification. |
+| Scrape personal emails (LinkedIn / company sites) | "Free" discovery, **but** violates site ToS, exposes us to privacy law (GDPR/CCPA), and is the mechanics of spam — rejected outright. |
+| User provides the contact manually | Zero legal exposure, no extra key, **but** loses the auto-discovery the feature is for. |
+| Auto-send the email | Fully automated, **but** spam risk, no human review, and needs a broader send scope — rejected; drafts keep a human in the loop. |
+| Full Google restricted-scope verification | Lets anyone use it, **but** months-long security assessment — overkill for a portfolio demo. |
+
+**Why chosen:** Keeps a genuinely useful job-seeker feature (find a relevant contact, draft a tailored note) while staying compliant and abuse-resistant — no scraping, no auto-send, least-privilege scope, and human review before anything leaves the outbox. Built in phases: Gmail OAuth + AI draft first, Hunter discovery second.
+
+---

@@ -13,7 +13,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.routers import analyze, interview_prep
+from app.routers import analyze, cold_email, google_auth, interview_prep
 from app.services import metrics
 from app.services.cache import cache
 
@@ -27,6 +27,13 @@ def _setup_logging() -> None:
     fmt = logging.Formatter("%(asctime)s %(levelname)s %(name)s | %(message)s")
     root = logging.getLogger()
     root.setLevel(logging.INFO)
+
+    # Quiet noisy third-party loggers so app.log (shipped to Loki) stays focused
+    # on our own usage/cache lines. watchfiles = uvicorn's reload watcher;
+    # httpx/httpcore log every outbound HTTP call (incl. Alloy's /metrics scrapes
+    # and OpenAI calls). Suppressing at the source affects both stdout and file.
+    for noisy in ("watchfiles", "watchfiles.main", "httpx", "httpcore"):
+        logging.getLogger(noisy).setLevel(logging.WARNING)
 
     # Guard against duplicate handlers across uvicorn --reload restarts.
     if any(isinstance(h, RotatingFileHandler) for h in root.handlers):
@@ -76,6 +83,8 @@ async def record_latency(request: Request, call_next):
 
 app.include_router(analyze.router)
 app.include_router(interview_prep.router)
+app.include_router(google_auth.router)
+app.include_router(cold_email.router)
 
 
 @app.get("/health")

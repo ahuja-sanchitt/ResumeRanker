@@ -6,5 +6,6 @@ openai
 redis
 pypdf
 prometheus-client
+httpx
 # Optional: richer extraction fallback for messy PDFs (imported lazily if present)
 # pdfplumber
