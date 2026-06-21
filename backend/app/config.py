@@ -49,6 +49,20 @@ class Settings:
     sim_floor: float = _get_float("SIM_FLOOR", 0.65)
     sim_ceil: float = _get_float("SIM_CEIL", 0.90)
 
+    # --- Cold email: Hunter.io (contact discovery) ---
+    hunter_api_key: str = os.getenv("HUNTER_API_KEY", "")
+
+    # --- Cold email: Google OAuth + Gmail (draft only) ---
+    google_client_id: str = os.getenv("GOOGLE_CLIENT_ID", "")
+    google_client_secret: str = os.getenv("GOOGLE_CLIENT_SECRET", "")
+    google_redirect_uri: str = os.getenv(
+        "GOOGLE_REDIRECT_URI", "http://localhost:8000/auth/google/callback"
+    )
+    # Where to send the user back after OAuth (the frontend).
+    frontend_url: str = os.getenv("FRONTEND_URL", "http://localhost:5173")
+    # How long a connected-Gmail session (stored token) lives.
+    gmail_session_ttl_seconds: int = _get_int("GMAIL_SESSION_TTL_SECONDS", 7 * 24 * 60 * 60)
+
     # --- CORS ---
     cors_origins: list[str] = [
         o.strip()

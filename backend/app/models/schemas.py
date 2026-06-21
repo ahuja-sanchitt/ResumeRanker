@@ -43,3 +43,46 @@ class InterviewPrepResponse(BaseModel):
     sources: list[str] = Field(default_factory=list)
     last_updated: str = ""
     cached: bool = False
+
+
+# ---------- cold email ----------
+
+class ContactsRequest(BaseModel):
+    company: str = Field(..., min_length=1, max_length=120)
+
+
+class Contact(BaseModel):
+    first_name: str = ""
+    last_name: str = ""
+    email: str
+    position: str = ""
+    seniority: str = ""
+    department: str = ""
+    confidence: int = 0
+
+
+class ContactsResponse(BaseModel):
+    company: str
+    domain: str | None = None
+    contacts: list[Contact] = Field(default_factory=list)
+
+
+class ColdEmailDraftResponse(BaseModel):
+    subject: str
+    body: str
+
+
+class GmailDraftRequest(BaseModel):
+    to: str = Field(..., min_length=3, max_length=320)
+    subject: str = Field(..., min_length=1, max_length=998)
+    body: str = Field(..., min_length=1)
+
+
+class GmailDraftResponse(BaseModel):
+    draft_id: str
+    drafts_url: str
+
+
+class GmailStatusResponse(BaseModel):
+    connected: bool
+    email: str | None = None
