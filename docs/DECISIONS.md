@@ -71,3 +71,60 @@ newer entry that replaced it.
 **Why chosen:** Keeps a genuinely useful job-seeker feature (find a relevant contact, draft a tailored note) while staying compliant and abuse-resistant — no scraping, no auto-send, least-privilege scope, and human review before anything leaves the outbox. Built in phases: Gmail OAuth + AI draft first, Hunter discovery second.
 
 ---
+
+## D-003 — "Lodestar" frontend: sidebar shell + shared analysis-session state, dependency-free routing
+
+- **Date:** 2026-06-22
+- **Phase / area:** Frontend redesign — `frontend/src/App.jsx`, new `AnalysisContext`, `Sidebar`/`Topbar`/`Stepper` components
+- **Status:** Accepted
+- **Decision:** Replace the two-tab UI with a single-page sidebar shell driving one shared 3-step flow (Upload → Match report → Outreach). Switch views with local state in `App`, and hold the cross-step session (résumé, JD, company, role, `/analyze` result, `/interview-prep` result, Gmail session) in a small React Context.
+
+**Options considered:**
+
+| Option | Tradeoff |
+| --- | --- |
+| **State-based view switch + React Context for session** ✅ | No new dependency; the three steps genuinely share one analysis session, so a context is the natural home and avoids prop-drilling or re-fetching. **But** we hand-roll view gating (Match/Outreach locked until an analysis exists). |
+| Add `react-router` | Real URLs / deep-linking / back-button, **but** a routing dependency and route-loader plumbing for only three views that are really one wizard — overkill, and the steps share state that routing doesn't manage for us. |
+| Keep top tabs, prop-drill state | Smallest diff, **but** doesn't match the requested sidebar/stepper design and prop-drilling résumé+results through three independent tabs is messy. |
+
+**Why chosen:** The flow is a wizard over one shared session, not three independent pages — a context models that directly, and skipping a router keeps the bundle and mental model small for a 3-view portfolio app. Gating logic is trivial to hand-roll.
+
+---
+
+## D-004 — Match-report interview questions reuse the existing `/interview-prep` call
+
+- **Date:** 2026-06-22
+- **Phase / area:** Frontend `MatchReport.jsx`; reuses `api.getInterviewPrep` → backend `/interview-prep`
+- **Status:** Accepted
+- **Decision:** Populate the Match report's "Likely interview questions" section by firing a second call to the existing `/interview-prep` endpoint (keyed on the company + role entered on the upload step) and folding its rounds/question-types in, rather than teaching `/analyze` to emit questions.
+
+**Options considered:**
+
+| Option | Tradeoff |
+| --- | --- |
+| **Second call to existing `/interview-prep`** ✅ | Reuses a working, web-search-backed, *cached* (7-day TTL) endpoint that already returns cited questions/rounds; zero backend change. **But** a second, slower call per analysis (mitigated by its cache and by firing it concurrently with analyze). |
+| Extend `/analyze`'s LLM schema to also return questions | One round-trip, questions tailored to the exact résumé↔JD gaps. **But** a backend prompt/schema change, no web-search grounding/citations, and it bloats the analyze response — a new decision for a section that already has a home. |
+| Omit the section | Simplest, **but** drops a feature clearly in the mockup. |
+
+**Why chosen:** The grounded, cited, cached interview-prep endpoint already exists and is exactly this data; reusing it is faster to ship and keeps the questions web-sourced. The extra latency is hidden by running it alongside `/analyze` and by the existing cache.
+
+---
+
+## D-005 — Library (Saved roles / Email templates) deferred to a later pass
+
+- **Date:** 2026-06-22
+- **Phase / area:** Frontend `Sidebar.jsx`
+- **Status:** Accepted
+- **Decision:** Show the sidebar's "Library" group (Saved roles, Email templates) as disabled "soon" items this pass; build no persistence for them yet.
+
+**Options considered:**
+
+| Option | Tradeoff |
+| --- | --- |
+| **Disabled placeholders now** ✅ | Ships the core Upload→Match→Outreach flow fast and keeps the sidebar visually complete, **but** the items aren't yet functional. |
+| Build with `localStorage` | Real, usable persistence with no backend, **but** browser-local only (lost across devices) and extra UI for a non-core feature. |
+| Build with backend storage | Durable + multi-device, **but** new endpoints, storage, and auth scope for what isn't the headline feature. |
+
+**Why chosen:** The headline value is the analysis→outreach flow; the Library is secondary. Stubbing it keeps the design honest (the nav exists) without spending this pass on storage decisions that can be made later when the feature is actually built.
+
+---
