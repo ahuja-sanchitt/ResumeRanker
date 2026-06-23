@@ -1,3 +1,4 @@
+import { googleLoginUrl } from "../api.js";
 import { useAnalysis } from "../AnalysisContext.jsx";
 
 const WORKSPACE = [
@@ -12,7 +13,7 @@ const LIBRARY = [
 ];
 
 export default function Sidebar() {
-  const { view, setView, hasAnalysis } = useAnalysis();
+  const { view, setView, hasAnalysis, gmailConnected, gmailEmail } = useAnalysis();
 
   function go(id) {
     // Match/Outreach are gated until there's an analysis (D-003).
@@ -57,13 +58,26 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      <div className="user">
-        <span className="user__avatar">AR</span>
-        <div className="user__meta">
-          <span className="user__name">Alex Rivera</span>
-          <span className="user__sub">Pro · job hunt</span>
+      {/* There's no separate Lodestar account — the connected Gmail (used for
+          drafting outreach) is the only identity this app has, so it doubles
+          as the "who's signed in" footer. */}
+      {gmailConnected ? (
+        <div className="user">
+          <span className="user__avatar">{gmailEmail.charAt(0).toUpperCase()}</span>
+          <div className="user__meta">
+            <span className="user__name">{gmailEmail}</span>
+            <span className="user__sub user__sub--connected">Connected</span>
+          </div>
         </div>
-      </div>
+      ) : (
+        <a className="user user--link" href={googleLoginUrl()}>
+          <span className="user__avatar user__avatar--ghost">G</span>
+          <div className="user__meta">
+            <span className="user__name">Sign in with Google</span>
+            <span className="user__sub">Connect Gmail to send outreach</span>
+          </div>
+        </a>
+      )}
     </aside>
   );
 }
