@@ -1,12 +1,5 @@
-import { useEffect, useState } from "react";
-import {
-  getContacts,
-  draftColdEmail,
-  gmailStatus,
-  createGmailDraft,
-  googleLogout,
-  googleLoginUrl,
-} from "../api.js";
+import { useState } from "react";
+import { getContacts, draftColdEmail, createGmailDraft, googleLogout, googleLoginUrl } from "../api.js";
 import { useAnalysis } from "../AnalysisContext.jsx";
 
 function contactName(c) {
@@ -14,7 +7,16 @@ function contactName(c) {
 }
 
 export default function Outreach() {
-  const { file, jd, company, role, gmailSession, setGmailSession } = useAnalysis();
+  const {
+    file,
+    jd,
+    company,
+    role,
+    gmailSession,
+    setGmailSession,
+    gmailEmail,
+    gmailConnected,
+  } = useAnalysis();
 
   // --- contact discovery ---
   const [contacts, setContacts] = useState(null); // null = not searched
@@ -29,23 +31,8 @@ export default function Outreach() {
   const [draftState, setDraftState] = useState({ loading: false, error: "" });
   const [to, setTo] = useState("");
 
-  // --- gmail ---
-  const [gmail, setGmail] = useState({ connected: false, email: "", checked: false });
+  // --- gmail --- (connection status itself lives in AnalysisContext — see Sidebar)
   const [gmailState, setGmailState] = useState({ loading: false, error: "", result: null });
-
-  useEffect(() => {
-    let active = true;
-    if (!gmailSession) {
-      setGmail({ connected: false, email: "", checked: true });
-      return;
-    }
-    gmailStatus(gmailSession)
-      .then((s) => active && setGmail({ connected: s.connected, email: s.email || "", checked: true }))
-      .catch(() => active && setGmail({ connected: false, email: "", checked: true }));
-    return () => {
-      active = false;
-    };
-  }, [gmailSession]);
 
   async function findContacts() {
     setContactsState({ loading: true, error: "", configured: true });
@@ -108,8 +95,7 @@ export default function Outreach() {
 
   async function disconnect() {
     await googleLogout(gmailSession);
-    setGmailSession("");
-    setGmail({ connected: false, email: "", checked: true });
+    setGmailSession(""); // AnalysisContext's status effect picks this up and clears connected/email
   }
 
   return (
@@ -233,7 +219,7 @@ export default function Outreach() {
         <section className="card">
           <h2 className="card__title"><span className="card__num">3</span> Save to Gmail</h2>
 
-          {!gmail.connected ? (
+          {!gmailConnected ? (
             <div className="gmail__connect">
               <p className="muted small">
                 Connect Gmail to save this as a draft in your account. We only request
@@ -246,7 +232,7 @@ export default function Outreach() {
           ) : (
             <>
               <p className="muted small">
-                Connected as <strong>{gmail.email}</strong> ·{" "}
+                Connected as <strong>{gmailEmail}</strong> ·{" "}
                 <button className="linkbtn" onClick={disconnect}>disconnect</button>
               </p>
               <button className="btn btn--primary" onClick={saveToGmail} disabled={gmailState.loading || !to.trim()}>
