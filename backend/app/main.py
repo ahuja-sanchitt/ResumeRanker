@@ -11,11 +11,15 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
 from app.config import settings
 from app.routers import analyze, cold_email, google_auth, interview_prep
 from app.services import metrics
 from app.services.cache import cache
+from app.services.rate_limit import limiter
 
 
 def _setup_logging() -> None:
@@ -67,6 +71,41 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.state.limiter = limiter
+app.add_middleware(SlowAPIMiddleware)
+# No blanket default_limits: health/metrics/root stay unlimited (cheap,
+# operational), and OAuth read endpoints aren't a cost vector. Only the
+# OpenAI/Hunter-calling routes carry an explicit @limiter.limit(...).
+
+
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
+    # Match the rest of the API's {"detail": ...} error shape instead of
+    # slowapi's default {"error": ...} so the frontend's existing parseError
+    # handles this without any special-casing.
+    response = JSONResponse(
+        status_code=429,
+        content={"detail": f"Too many requests ({exc.detail}). Please wait and try again."},
+    )
+    response.headers["Retry-After"] = "60"
+    return response
+
+
+@app.middleware("http")
+async def security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+    response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains"
+    # /docs and /redoc render Swagger/ReDoc UI from a CDN; a strict CSP there
+    # would block their own scripts/styles. The real API surface is JSON, where
+    # browsers don't execute CSP-relevant content anyway.
+    if request.url.path not in ("/docs", "/redoc"):
+        response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'"
+    return response
 
 
 @app.middleware("http")

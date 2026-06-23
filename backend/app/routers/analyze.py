@@ -1,7 +1,7 @@
 """POST /analyze — résumé PDF + JD text -> hybrid explainable score (cached)."""
 from __future__ import annotations
 
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 
 from app.models.schemas import AnalyzeResponse
 from app.services import metrics, scoring
@@ -9,6 +9,7 @@ from app.services.cache import cache
 from app.services.embeddings import embedding_similarity_score
 from app.services.llm import analyze_resume_jd
 from app.services.pdf_extract import PdfExtractionError, extract_text_from_pdf
+from app.services.rate_limit import limiter
 
 router = APIRouter(tags=["analyze"])
 
@@ -16,7 +17,8 @@ MAX_PDF_BYTES = 10 * 1024 * 1024  # 10 MB
 
 
 @router.post("/analyze", response_model=AnalyzeResponse)
-async def analyze(resume: UploadFile = File(...), jd: str = Form(...)) -> AnalyzeResponse:
+@limiter.limit("10/minute")
+async def analyze(request: Request, resume: UploadFile = File(...), jd: str = Form(...)) -> AnalyzeResponse:
     # --- validate inputs ---
     jd_norm = " ".join(jd.split())  # collapse whitespace -> stable cache key
     if len(jd_norm) < 20:

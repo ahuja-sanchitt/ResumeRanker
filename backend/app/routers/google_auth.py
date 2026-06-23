@@ -10,13 +10,14 @@ from __future__ import annotations
 
 import secrets
 
-from fastapi import APIRouter, Header, HTTPException, Query
+from fastapi import APIRouter, Header, HTTPException, Query, Request
 from fastapi.responses import RedirectResponse
 
 from app.config import settings
 from app.models.schemas import GmailStatusResponse
 from app.services import gmail_session, google_oauth
 from app.services.cache import cache
+from app.services.rate_limit import limiter
 
 router = APIRouter(tags=["google-auth"])
 
@@ -25,7 +26,8 @@ _STATE_TTL = 600  # 10 minutes to complete the consent flow
 
 
 @router.get("/auth/google/login")
-def google_login() -> RedirectResponse:
+@limiter.limit("20/minute")
+def google_login(request: Request) -> RedirectResponse:
     try:
         state = secrets.token_urlsafe(24)
         cache.set_json(_STATE_PREFIX + state, {"ok": True}, ttl=_STATE_TTL)

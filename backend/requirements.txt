@@ -7,5 +7,6 @@ redis
 pypdf
 prometheus-client
 httpx
+slowapi
 # Optional: richer extraction fallback for messy PDFs (imported lazily if present)
 # pdfplumber
