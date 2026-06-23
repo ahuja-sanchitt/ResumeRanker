@@ -6,7 +6,7 @@
 """
 from __future__ import annotations
 
-from fastapi import APIRouter, File, Form, Header, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, Header, HTTPException, Request, UploadFile
 
 from app.models.schemas import (
     ColdEmailDraftResponse,
@@ -18,6 +18,7 @@ from app.models.schemas import (
 from app.services import gmail, gmail_session, llm
 from app.services.hunter import HunterError, find_contacts
 from app.services.pdf_extract import PdfExtractionError, extract_text_from_pdf
+from app.services.rate_limit import limiter
 
 router = APIRouter(tags=["cold-email"])
 
@@ -25,7 +26,8 @@ MAX_PDF_BYTES = 10 * 1024 * 1024
 
 
 @router.post("/contacts", response_model=ContactsResponse)
-def contacts(req: ContactsRequest) -> ContactsResponse:
+@limiter.limit("15/minute")
+def contacts(request: Request, req: ContactsRequest) -> ContactsResponse:
     try:
         result = find_contacts(req.company.strip())
     except HunterError as exc:
@@ -36,7 +38,9 @@ def contacts(req: ContactsRequest) -> ContactsResponse:
 
 
 @router.post("/cold-email/draft", response_model=ColdEmailDraftResponse)
+@limiter.limit("10/minute")
 async def cold_email_draft(
+    request: Request,
     resume: UploadFile = File(...),
     company: str = Form(...),
     contact_name: str = Form(""),
@@ -61,8 +65,9 @@ async def cold_email_draft(
 
 
 @router.post("/gmail/draft", response_model=GmailDraftResponse)
+@limiter.limit("20/minute")
 def gmail_draft(
-    req: GmailDraftRequest, x_gmail_session: str | None = Header(default=None)
+    request: Request, req: GmailDraftRequest, x_gmail_session: str | None = Header(default=None)
 ) -> GmailDraftResponse:
     if not x_gmail_session:
         raise HTTPException(status_code=401, detail="Connect Gmail first.")

@@ -128,3 +128,23 @@ newer entry that replaced it.
 **Why chosen:** The headline value is the analysis→outreach flow; the Library is secondary. Stubbing it keeps the design honest (the nav exists) without spending this pass on storage decisions that can be made later when the feature is actually built.
 
 ---
+
+## D-006 — Per-IP rate limiting via slowapi, Redis-backed with in-memory fallback
+
+- **Date:** 2026-06-23
+- **Phase / area:** API hardening — new `backend/app/services/rate_limit.py`; decorators on `analyze.py`, `interview_prep.py`, `cold_email.py` (`/contacts`, `/cold-email/draft`, `/gmail/draft`), `google_auth.py` (`/auth/google/login`); `main.py` (exception handler + `SlowAPIMiddleware`)
+- **Status:** Accepted
+- **Decision:** Rate-limit the OpenAI/Hunter-calling endpoints per IP using `slowapi` (`/analyze` and `/cold-email/draft` at 10/min, `/interview-prep` at 10/min, `/contacts` at 15/min, `/gmail/draft` at 20/min, `/auth/google/login` at 20/min), with no blanket `default_limits` so `/health`, `/metrics`, and the cheap OAuth read endpoints stay unlimited. Storage degrades to in-memory if `REDIS_URL` isn't reachable, mirroring `cache.py`'s pattern. The limiter keys on the leftmost `X-Forwarded-For` hop, not `request.client.host`.
+
+**Options considered:**
+
+| Option | Tradeoff |
+| --- | --- |
+| **`slowapi` + per-route limits, Redis-or-memory storage, X-Forwarded-For-aware key** ✅ | Small, well-known dependency; limits survive restarts/scale-out when Upstash is configured and still work for local dev/demos when it isn't (same tradeoff already accepted for `cache.py`). **But** needs a custom key function — Render terminates TLS at a proxy, so the default `get_remote_address` (`request.client.host`) would bucket every visitor under one IP, defeating the limit. |
+| Blanket `default_limits` on every route | Simpler (one line), **but** would also throttle `/health` and `/metrics` (scraped automatically by Render/Alloy) and OAuth status/logout calls that cost nothing — wrong shape for this app's actual cost surface. |
+| Hand-rolled token bucket in `cache.py` | No new dependency, **but** reinvents sliding-window/fixed-window logic and edge cases (`limits` already solves) for no real benefit. |
+| App-level API key instead of/in addition to rate limiting | Stops anonymous use entirely, **but** is a bigger scope change (key issuance/rotation) than what was asked; rate limiting alone caps the blast radius of the current no-auth design without that scope. |
+
+**Why chosen:** The real risk is cost-based abuse of paid OpenAI/Hunter calls via the publicly-discoverable `/docs`, not unauthenticated access per se — so the fix should target exactly those routes, at limits generous enough for normal use but tight enough to bound a script hammering the API. Reusing the Redis-or-memory degradation pattern from `cache.py` keeps the codebase consistent rather than introducing a second philosophy for "is the optional cache up." The 429 handler returns the same `{"detail": ...}` shape as every other error in the API so the frontend's existing `parseError` needed no changes.
+
+---

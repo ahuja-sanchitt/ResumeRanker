@@ -75,7 +75,7 @@ class ColdEmailDraftResponse(BaseModel):
 class GmailDraftRequest(BaseModel):
     to: str = Field(..., min_length=3, max_length=320)
     subject: str = Field(..., min_length=1, max_length=998)
-    body: str = Field(..., min_length=1)
+    body: str = Field(..., min_length=1, max_length=20000)
 
 
 class GmailDraftResponse(BaseModel):

@@ -3,19 +3,21 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 
 from app.config import settings
 from app.models.schemas import InterviewPrepRequest, InterviewPrepResponse
 from app.services import llm, metrics
 from app.services.cache import cache
+from app.services.rate_limit import limiter
 from app.services.web_search import WebSearchError, run_interview_search
 
 router = APIRouter(tags=["interview-prep"])
 
 
 @router.post("/interview-prep", response_model=InterviewPrepResponse)
-def interview_prep(req: InterviewPrepRequest) -> InterviewPrepResponse:
+@limiter.limit("10/minute")
+def interview_prep(request: Request, req: InterviewPrepRequest) -> InterviewPrepResponse:
     company_norm = " ".join(req.company_name.split()).lower()
     seniority = llm.normalize_role(req.role)
 
