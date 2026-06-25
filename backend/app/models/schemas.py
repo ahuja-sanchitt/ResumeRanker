@@ -31,6 +31,11 @@ class InterviewRound(BaseModel):
     description: str = ""
 
 
+class InterviewTopic(BaseModel):
+    topic: str
+    questions: list[str] = Field(default_factory=list)
+
+
 class InterviewPrepResponse(BaseModel):
     company: str
     role: str
@@ -38,7 +43,7 @@ class InterviewPrepResponse(BaseModel):
     num_rounds: int = 0
     rounds: list[InterviewRound] = Field(default_factory=list)
     frequent_question_types: list[str] = Field(default_factory=list)
-    topics_to_focus: list[str] = Field(default_factory=list)
+    topics_to_focus: list[InterviewTopic] = Field(default_factory=list)
     difficulty_notes: str = ""
     sources: list[str] = Field(default_factory=list)
     last_updated: str = ""

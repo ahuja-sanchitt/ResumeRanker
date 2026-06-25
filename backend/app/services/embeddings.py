@@ -7,11 +7,14 @@ opinion, which is exactly why it's worth cross-checking the LLM against.
 """
 from __future__ import annotations
 
+import logging
 import math
 
 from app.config import settings
 from app.services import metrics
 from app.services.openai_client import get_client
+
+logger = logging.getLogger("embeddings")
 
 # Bound input size to keep token usage and latency predictable.
 MAX_CHARS = 12000
@@ -48,4 +51,9 @@ def embedding_similarity_score(resume_text: str, jd_text: str) -> tuple[int, flo
     """Return (0-100 score, raw cosine) for résumé vs. JD."""
     resume_vec, jd_vec = embed_texts([resume_text, jd_text])
     cosine = cosine_similarity(resume_vec, jd_vec)
-    return _rescale_to_score(cosine), cosine
+    score = _rescale_to_score(cosine)
+    logger.info(
+        "embedding cosine=%.4f floor=%.2f ceil=%.2f score=%d resume_chars=%d jd_chars=%d",
+        cosine, settings.sim_floor, settings.sim_ceil, score, len(resume_text), len(jd_text),
+    )
+    return score, cosine

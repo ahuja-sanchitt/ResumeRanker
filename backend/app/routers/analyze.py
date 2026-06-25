@@ -1,9 +1,13 @@
 """POST /analyze — résumé PDF + JD text -> hybrid explainable score (cached)."""
 from __future__ import annotations
 
+import logging
+
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 
 from app.models.schemas import AnalyzeResponse
+
+logger = logging.getLogger("analyze")
 from app.services import metrics, scoring
 from app.services.cache import cache
 from app.services.embeddings import embedding_similarity_score
@@ -43,8 +47,10 @@ async def analyze(request: Request, resume: UploadFile = File(...), jd: str = Fo
     cached = cache.get_json(key)
     if cached is not None:
         metrics.track_cache("analyze", hit=True)
+        logger.info("analyze cache=HIT embedding_score=%s final_score=%s", cached.get("embedding_score"), cached.get("final_score"))
         return AnalyzeResponse(**cached, cached=True)
     metrics.track_cache("analyze", hit=False)
+    logger.info("analyze cache=MISS resume_chars=%d jd_chars=%d", len(resume_text), len(jd_norm))
 
     # --- hybrid scoring ---
     try:
@@ -54,5 +60,6 @@ async def analyze(request: Request, resume: UploadFile = File(...), jd: str = Fo
         raise HTTPException(status_code=502, detail=f"Scoring failed: {exc}") from exc
 
     result = scoring.build_result(embedding_score, llm_result)
+    logger.info("analyze embedding_score=%d llm_score=%d final_score=%d", embedding_score, llm_result.get("llm_fit_score", 0), result["final_score"])
     cache.set_json(key, result)  # deterministic on identical input; no TTL
     return AnalyzeResponse(**result, cached=False)

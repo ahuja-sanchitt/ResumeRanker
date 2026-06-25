@@ -45,9 +45,7 @@ export default function MatchReport() {
   } = analysis;
 
   const [headline, sub] = headlineFor(final_score);
-  const questions = prep?.frequent_question_types?.length
-    ? prep.frequent_question_types
-    : prep?.topics_to_focus || [];
+  const topics = prep?.topics_to_focus || [];
 
   return (
     <div className="report">
@@ -82,8 +80,8 @@ export default function MatchReport() {
               <div className="pillrow">
                 <span className="pill pill--good">{strengths.length} standout strengths</span>
                 <span className="pill pill--bad">{gaps.length} gaps to close</span>
-                {questions.length > 0 && (
-                  <span className="pill pill--warn">{questions.length} likely interview topics</span>
+                {topics.length > 0 && (
+                  <span className="pill pill--warn">{topics.length} likely interview topics</span>
                 )}
               </div>
             </div>
@@ -144,12 +142,21 @@ export default function MatchReport() {
               </h3>
               <span className="qhead__note">Tailored to this role &amp; your gaps</span>
             </div>
-            {questions.length > 0 ? (
-              <div className="qgrid">
-                {questions.map((q, i) => (
-                  <div key={i} className="qcard">
-                    <span className="qcard__n">{String(i + 1).padStart(2, "0")}</span>
-                    <span className="qcard__text">{q}</span>
+            {topics.length > 0 ? (
+              <div className="qtopics">
+                {topics.map((t, i) => (
+                  <div key={i} className="qtopic">
+                    <div className="qtopic__head">
+                      <span className="qtopic__n">{String(i + 1).padStart(2, "0")}</span>
+                      <span className="qtopic__name">{t.topic}</span>
+                    </div>
+                    {t.questions?.length > 0 && (
+                      <ul className="qtopic__qs">
+                        {t.questions.map((q, j) => (
+                          <li key={j}>{q}</li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                 ))}
               </div>

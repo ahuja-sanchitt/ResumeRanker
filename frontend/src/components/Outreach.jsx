@@ -130,7 +130,14 @@ export default function Outreach() {
         )}
 
         {contacts !== null && contactsState.configured && contacts.length === 0 && !contactsState.error && (
-          <p className="muted">No contacts found — enter one manually below.</p>
+          <p className="muted">
+            No contacts found for <strong>{company}</strong> in Hunter's database.
+            Try finding a senior engineer or EM on{" "}
+            <a href={`https://www.linkedin.com/company/${encodeURIComponent(company.toLowerCase())}/people/`} target="_blank" rel="noreferrer">
+              LinkedIn
+            </a>{" "}
+            and enter them manually below.
+          </p>
         )}
 
         {contacts && contacts.length > 0 && (
