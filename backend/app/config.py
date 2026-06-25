@@ -46,11 +46,14 @@ class Settings:
     # OpenAI embeddings are anisotropic: even unrelated texts rarely score below
     # ~0.6 cosine, and strong matches top out around ~0.9. Linearly rescale that
     # band to 0-100 so the score is meaningfully spread, then clamp.
-    sim_floor: float = _get_float("SIM_FLOOR", 0.65)
+    sim_floor: float = _get_float("SIM_FLOOR", 0.40)
     sim_ceil: float = _get_float("SIM_CEIL", 0.90)
 
     # --- Cold email: Hunter.io (contact discovery) ---
     hunter_api_key: str = os.getenv("HUNTER_API_KEY", "")
+
+    # --- Cold email: Apollo.io (contact discovery fallback) ---
+    apollo_api_key: str = os.getenv("APOLLO_API_KEY", "")
 
     # --- Cold email: Google OAuth + Gmail (draft only) ---
     google_client_id: str = os.getenv("GOOGLE_CLIENT_ID", "")

@@ -12,8 +12,6 @@ export default function NewAnalysis() {
     setCompany,
     role,
     setRole,
-    location,
-    setLocation,
     setAnalysis,
     setPrep,
     setView,
@@ -143,7 +141,7 @@ export default function NewAnalysis() {
         <h2 className="card__title">
           <span className="card__num">3</span> Role details
         </h2>
-        <div className="fields3">
+        <div className="fields2">
           <label className="field">
             <span className="field__label">Company</span>
             <input value={company} onChange={(e) => setCompany(e.target.value)} placeholder="e.g. Helio" />
@@ -151,10 +149,6 @@ export default function NewAnalysis() {
           <label className="field">
             <span className="field__label">Role</span>
             <input value={role} onChange={(e) => setRole(e.target.value)} placeholder="e.g. Senior Product Designer" />
-          </label>
-          <label className="field">
-            <span className="field__label">Location <span className="opt">(optional)</span></span>
-            <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. Remote — US" />
           </label>
         </div>
       </section>

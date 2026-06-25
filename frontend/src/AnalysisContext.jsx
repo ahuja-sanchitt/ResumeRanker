@@ -18,7 +18,6 @@ export function AnalysisProvider({ children }) {
   const [jd, setJd] = useState("");
   const [company, setCompany] = useState("");
   const [role, setRole] = useState("");
-  const [location, setLocation] = useState("");
 
   // Results
   const [analysis, setAnalysis] = useState(null); // /analyze response
@@ -80,7 +79,6 @@ export function AnalysisProvider({ children }) {
     setJd("");
     setCompany("");
     setRole("");
-    setLocation("");
     setAnalysis(null);
     setPrep(null);
     setView("new");
@@ -100,8 +98,6 @@ export function AnalysisProvider({ children }) {
       setCompany,
       role,
       setRole,
-      location,
-      setLocation,
       analysis,
       setAnalysis,
       prep,
@@ -119,7 +115,6 @@ export function AnalysisProvider({ children }) {
       jd,
       company,
       role,
-      location,
       analysis,
       prep,
       gmailSession,

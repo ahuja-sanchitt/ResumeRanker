@@ -135,7 +135,7 @@ _PREP_SYSTEM = (
     '  "num_rounds": number\n'
     '  "rounds": [{"name": string, "description": string}]\n'
     '  "frequent_question_types": string[]\n'
-    '  "topics_to_focus": string[]\n'
+    '  "topics_to_focus": [{"topic": string, "questions": string[]}]  // 3-4 real example questions per topic\n'
     '  "difficulty_notes": string\n'
     '  "sources": string[]   // URLs you relied on\n'
     "If the results are thin or conflicting, say so in difficulty_notes and keep lists short. "
@@ -161,12 +161,24 @@ def summarize_prep(company: str, role: str, seniority: str, search_text: str, so
                 )
             elif isinstance(r, str) and r.strip():
                 rounds.append({"name": r.strip(), "description": ""})
+    # topics_to_focus is now [{topic, questions}]; handle both old string[] and new object[] shapes.
+    topics_raw = data.get("topics_to_focus") or []
+    topics: list[dict[str, Any]] = []
+    for t in topics_raw:
+        if isinstance(t, dict):
+            topics.append({
+                "topic": str(t.get("topic", "")).strip(),
+                "questions": _as_str_list(t.get("questions")),
+            })
+        elif isinstance(t, str) and t.strip():
+            topics.append({"topic": t.strip(), "questions": []})
+
     merged_sources = _as_str_list(data.get("sources")) or sources
     return {
         "num_rounds": _as_score(data.get("num_rounds")) if data.get("num_rounds") is not None else len(rounds),
         "rounds": rounds,
         "frequent_question_types": _as_str_list(data.get("frequent_question_types")),
-        "topics_to_focus": _as_str_list(data.get("topics_to_focus")),
+        "topics_to_focus": topics,
         "difficulty_notes": str(data.get("difficulty_notes", "")).strip(),
         "sources": merged_sources,
     }

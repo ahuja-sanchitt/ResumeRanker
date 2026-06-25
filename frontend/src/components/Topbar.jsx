@@ -8,9 +8,9 @@ const TITLES = {
 };
 
 export default function Topbar() {
-  const { view, company, role, location } = useAnalysis();
+  const { view, company, role } = useAnalysis();
 
-  const crumbs = [company, role, location].filter((c) => c && c.trim());
+  const crumbs = [company, role].filter((c) => c && c.trim());
 
   return (
     <header className="topbar">
