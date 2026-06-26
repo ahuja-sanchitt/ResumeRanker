@@ -27,7 +27,7 @@ from app.services.rate_limit import limiter
 
 logger = logging.getLogger("contacts")
 
-CONTACTS_TARGET = 5
+CONTACTS_TARGET = 6
 
 router = APIRouter(tags=["cold-email"])
 
