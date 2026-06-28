@@ -6,14 +6,14 @@ import logging
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 
 from app.models.schemas import AnalyzeResponse
-
-logger = logging.getLogger("analyze")
 from app.services import metrics, scoring
 from app.services.cache import cache
 from app.services.embeddings import embedding_similarity_score
 from app.services.llm import analyze_resume_jd
 from app.services.pdf_extract import PdfExtractionError, extract_text_from_pdf
 from app.services.rate_limit import limiter
+
+logger = logging.getLogger("analyze")
 
 router = APIRouter(tags=["analyze"])
 
@@ -52,7 +52,7 @@ async def analyze(request: Request, resume: UploadFile = File(...), jd: str = Fo
     metrics.track_cache("analyze", hit=False)
     logger.info("analyze cache=MISS resume_chars=%d jd_chars=%d", len(resume_text), len(jd_norm))
 
-    # --- hybrid scoring ---
+    # --- scoring: three independent signals ---
     try:
         embedding_score, _cosine = embedding_similarity_score(resume_text, jd_norm)
         llm_result = analyze_resume_jd(resume_text, jd_norm)
@@ -60,6 +60,9 @@ async def analyze(request: Request, resume: UploadFile = File(...), jd: str = Fo
         raise HTTPException(status_code=502, detail=f"Scoring failed: {exc}") from exc
 
     result = scoring.build_result(embedding_score, llm_result)
-    logger.info("analyze embedding_score=%d llm_score=%d final_score=%d", embedding_score, llm_result.get("llm_fit_score", 0), result["final_score"])
+    logger.info(
+        "analyze embedding=%d skill=%d llm=%d final=%d",
+        result["embedding_score"], result["skill_score"], result["llm_fit_score"], result["final_score"],
+    )
     cache.set_json(key, result)  # deterministic on identical input; no TTL
     return AnalyzeResponse(**result, cached=False)

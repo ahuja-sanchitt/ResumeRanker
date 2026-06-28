@@ -36,7 +36,7 @@ newer entry that replaced it.
 
 - **Date:** 2026-06-11
 - **Phase / area:** Scoring core — `backend/app/services/scoring.py` (combine), `embeddings.py` (cosine + calibration), `llm.py` (`analyze_resume_jd`)
-- **Status:** Accepted
+- **Status:** Superseded by D-007
 - **Decision:** Score a resume against a JD with a blend of embedding cosine similarity and an LLM judgement — `final = 0.6 * embedding_score + 0.4 * llm_fit_score` — and surface all three numbers plus matched/missing skills and feedback.
 
 **Options considered:**
@@ -146,5 +146,46 @@ newer entry that replaced it.
 | App-level API key instead of/in addition to rate limiting | Stops anonymous use entirely, **but** is a bigger scope change (key issuance/rotation) than what was asked; rate limiting alone caps the blast radius of the current no-auth design without that scope. |
 
 **Why chosen:** The real risk is cost-based abuse of paid OpenAI/Hunter calls via the publicly-discoverable `/docs`, not unauthenticated access per se — so the fix should target exactly those routes, at limits generous enough for normal use but tight enough to bound a script hammering the API. Reusing the Redis-or-memory degradation pattern from `cache.py` keeps the codebase consistent rather than introducing a second philosophy for "is the optional cache up." The 429 handler returns the same `{"detail": ...}` shape as every other error in the API so the frontend's existing `parseError` needed no changes.
+
+---
+
+## D-007 — Three-signal scoring: embedding + skill coverage + LLM (supersedes D-001)
+
+- **Date:** 2026-06-28
+- **Phase / area:** Scoring core — `backend/app/services/scoring.py`, `embeddings.py`, `routers/analyze.py`, `config.py`; frontend `MatchReport.jsx`
+- **Status:** Accepted
+- **Decision:** Replace the two-signal blend from D-001 with three independent signals — `final = 0.2*embedding + 0.3*skill_coverage + 0.5*llm_fit` (weights normalized, env-tunable via `EMBEDDING_WEIGHT`/`SKILL_WEIGHT`/`LLM_WEIGHT`). `skill_coverage = matched / (matched + missing)` from the LLM's extracted skill labels. All three sub-scores plus matched/missing skills are surfaced in the breakdown.
+
+**Options considered:**
+
+| Option | Tradeoff |
+| --- | --- |
+| **Three signals (embedding + skill coverage + LLM)** ✅ | Each catches a distinct failure mode (see below); skill coverage fixes the cross-domain problem while embedding still guards against wholly-unrelated résumés. **But** three numbers to explain and a third weight to tune. |
+| Keep D-001 (embedding 0.6 + LLM 0.4) | Simplest, already built. **But** embedding dominates and tanks cross-domain matches: a real résumé (e-commerce vocab) vs an adtech JD scored cosine ~0.41 → embedding 4/100 → final 30, despite strong skill overlap. The full-document embedding measures *domain vocabulary* proximity, not skill match. |
+| Skill coverage + LLM only (the intermediate step we shipped first) | Removes the cross-domain penalty entirely; both signals are grounded in extracted skills. **But** drops the one signal that's immune to LLM hallucination — nothing catches a résumé that *reads* plausibly but shares no real content with the JD. |
+| Re-weight D-001 to embedding 0.3 / LLM 0.7 | One-line change, softens the embedding penalty. **But** still lets a near-zero embedding drag down a genuine match, and adds no new grounded signal. |
+
+**Why chosen:** The cross-domain failure (observed live on the owner's own résumé) proved full-document embedding similarity measures domain-vocabulary proximity, not skill fit — so it shouldn't be the dominant term. But removing it entirely loses the only injection-/hallucination-resistant anchor (the D-001 rationale still holds). Three signals keep that anchor at a low weight while skill coverage carries the grounded "requirements met" signal and the LLM carries nuance. The empirical "I found embedding similarity breaks on cross-domain résumés, diagnosed why, and redesigned the scoring" story is the project's strongest engineering talking point. Weights are env-tunable and normalized so they need not sum to 1.0.
+
+---
+
+## D-008 — Contact discovery: Apollo-only, real contacts, no fabricated fallback
+
+- **Date:** 2026-06-28
+- **Phase / area:** Cold-email outreach — `backend/app/routers/cold_email.py`, `services/apollo.py`; removed `services/fallback_contacts.py`; frontend `Outreach.jsx` empty state
+- **Status:** Accepted
+- **Decision:** `/contacts` returns only real contacts from Apollo.io (engineering leads/managers, India-filtered, capped at 6). When Apollo has no data for a company, return an empty list and let the UI show an honest empty state (LinkedIn link + manual entry). Do not fabricate contacts. Supersedes an intermediate implementation that filled any shortfall with randomly-generated names + guessed emails.
+
+**Options considered:**
+
+| Option | Tradeoff |
+| --- | --- |
+| **Apollo-only, empty state when none found** ✅ | Every contact shown is real with a verified email; honest. **But** the contact list is sometimes empty (Apollo's DB doesn't cover smaller companies), so the UI looks less "full." |
+| Fill shortfall with generated contacts (the intermediate build) | UI always shows 6 rows, looks populated/demo-friendly. **But** the names are fake and the emails are *pattern guesses* (`first.last@domain`) that will bounce or hit the wrong real person — actively harmful if a user drafts and sends, and embarrassing if an interviewer notices. The low confidence % was the only (insufficient) signal they were fake. |
+| Label generated contacts as "Sample — verify" | Keeps a full-looking UI while disclosing they're guesses. **But** still ships fabricated PII-shaped data and invites misuse; honesty-by-footnote is weak for something as consequential as emailing a stranger. |
+
+**Why chosen:** A contact-discovery feature's entire value is that the contacts are *real*. Fabricating names and guessing email addresses undermines the feature's premise and creates real downside (bounced/misdirected cold emails, lost trust in a demo). An honest empty state with a LinkedIn fallback + manual entry is more defensible than a populated list of fakes — "I chose not to fabricate data even though it made the UI look emptier" is itself a good judgment story. Manual entry already existed, so the empty state is fully functional, not a dead end.
+
+---
 
 ---

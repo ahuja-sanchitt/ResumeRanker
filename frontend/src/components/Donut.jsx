@@ -1,5 +1,5 @@
 /**
- * SVG ring gauge for a 0–100 score. The arc length is driven by
+ * SVG ring gauge for a 0-100 score. The arc length is driven by
  * stroke-dasharray/offset so the fill animates via CSS transition.
  */
 export default function Donut({ value = 0, label = "Match score", size = 200 }) {

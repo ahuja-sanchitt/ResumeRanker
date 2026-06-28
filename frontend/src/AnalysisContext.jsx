@@ -8,7 +8,7 @@ const AnalysisContext = createContext(null);
 /**
  * The shared "analysis session" that the whole Lodestar flow reads from.
  * Upload → Match report → Outreach are three views over one session, so the
- * résumé, JD, company/role, and both API results live here (see D-003).
+ * resume, JD, company/role, and both API results live here (see D-003).
  */
 export function AnalysisProvider({ children }) {
   const [view, setView] = useState("new"); // new | report | outreach
@@ -24,7 +24,7 @@ export function AnalysisProvider({ children }) {
   const [prep, setPrep] = useState(null); // /interview-prep response (may load after analysis)
 
   // Gmail OAuth session token (persisted; handed off via the callback redirect).
-  // This doubles as the app's only identity signal — there's no separate user
+  // This doubles as the app's only identity signal - there's no separate user
   // account system, so "signed in" means "has a connected Gmail" (see sidebar).
   const [gmailSession, setGmailSession] = useState(
     () => localStorage.getItem(GMAIL_SESSION_KEY) || ""
@@ -42,7 +42,7 @@ export function AnalysisProvider({ children }) {
     }
   }, []);
 
-  // Single source of truth for "is Gmail connected, and as whom" — both the
+  // Single source of truth for "is Gmail connected, and as whom" - both the
   // sidebar identity and the Outreach step read this instead of each polling
   // /auth/google/status independently.
   useEffect(() => {

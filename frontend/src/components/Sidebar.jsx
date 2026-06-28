@@ -58,7 +58,7 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      {/* There's no separate Lodestar account — the connected Gmail (used for
+      {/* There's no separate Lodestar account - the connected Gmail (used for
           drafting outreach) is the only identity this app has, so it doubles
           as the "who's signed in" footer. */}
       {gmailConnected ? (

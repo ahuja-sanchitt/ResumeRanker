@@ -44,7 +44,7 @@ export async function getContacts(company) {
   return res.json();
 }
 
-// ---------- Outreach: AI draft (multipart, re-sends the résumé) ----------
+// ---------- Outreach: AI draft (multipart, re-sends the resume) ----------
 
 export async function draftColdEmail(file, company, contactName, contactRole, jd) {
   const form = new FormData();
@@ -101,7 +101,7 @@ export async function googleLogout(session) {
 }
 
 // ---------- Gmail session token handoff ----------
-// The OAuth callback redirects back to the SPA with ?gmail_session=… in the URL.
+// The OAuth callback redirects back to the SPA with ?gmail_session=... in the URL.
 // Pull it out (if present), and let the caller persist it; then strip it from the
 // address bar so it isn't left lying around or re-read on reload.
 

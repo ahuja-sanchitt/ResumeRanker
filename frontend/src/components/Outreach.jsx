@@ -31,7 +31,7 @@ export default function Outreach() {
   const [draftState, setDraftState] = useState({ loading: false, error: "" });
   const [to, setTo] = useState("");
 
-  // --- gmail --- (connection status itself lives in AnalysisContext — see Sidebar)
+  // --- gmail --- (connection status itself lives in AnalysisContext - see Sidebar)
   const [gmailState, setGmailState] = useState({ loading: false, error: "", result: null });
 
   async function findContacts() {
@@ -67,7 +67,7 @@ export default function Outreach() {
 
   async function generateDraft() {
     if (!file) {
-      setDraftState({ loading: false, error: "Re-run the analysis — the résumé file isn't loaded." });
+      setDraftState({ loading: false, error: "Re-run the analysis - the resume file isn't loaded." });
       return;
     }
     setDraftState({ loading: true, error: "" });
@@ -102,24 +102,24 @@ export default function Outreach() {
     <div className="outreach">
       <p className="lede">
         Find a relevant engineer or hiring manager at <strong>{company || "the company"}</strong>,
-        let Lodestar draft a tailored note from your résumé, then save it to Gmail —
+        let Lodestar draft a tailored note from your resume, then save it to Gmail -
         you review and send it yourself. Nothing is ever sent automatically.
       </p>
 
-      {/* STEP A — contact */}
+      {/* STEP A - contact */}
       <section className="card">
         <h2 className="card__title"><span className="card__num">1</span> Pick a contact</h2>
 
         <div className="outreach__discover">
           <button className="btn btn--dark" onClick={findContacts} disabled={contactsState.loading || !company}>
-            {contactsState.loading ? "Searching…" : `Find contacts at ${company || "company"}`}
+            {contactsState.loading ? "Searching..." : `Find contacts at ${company || "company"}`}
           </button>
           {!company && <span className="muted small">Add a company on the upload step first.</span>}
         </div>
 
         {contacts !== null && !contactsState.configured && (
           <div className="notice">
-            <strong>Contact discovery isn’t configured.</strong> Add a{" "}
+            <strong>Contact discovery isn't configured.</strong> Add a{" "}
             <code>HUNTER_API_KEY</code> to the backend (see <code>docs/COLD_EMAIL_SETUP.md</code>),
             or enter a contact manually below.
           </div>
@@ -131,8 +131,8 @@ export default function Outreach() {
 
         {contacts !== null && contactsState.configured && contacts.length === 0 && !contactsState.error && (
           <p className="muted">
-            No contacts found for <strong>{company}</strong> in Hunter's database.
-            Try finding a senior engineer or EM on{" "}
+            No contacts found for <strong>{company}</strong>. Try finding a senior
+            engineer or engineering manager on{" "}
             <a href={`https://www.linkedin.com/company/${encodeURIComponent(company.toLowerCase())}/people/`} target="_blank" rel="noreferrer">
               LinkedIn
             </a>{" "}
@@ -149,7 +149,7 @@ export default function Outreach() {
                   onClick={() => chooseContact(c)}
                 >
                   <span className="contact__name">{contactName(c)}</span>
-                  <span className="contact__role">{c.position || "—"}</span>
+                  <span className="contact__role">{c.position || "-"}</span>
                   <span className="contact__tags">
                     {c.seniority && <span className="tag">{c.seniority}</span>}
                     {c.department && <span className="tag">{c.department}</span>}
@@ -183,18 +183,18 @@ export default function Outreach() {
         </details>
       </section>
 
-      {/* STEP B — draft */}
+      {/* STEP B - draft */}
       {selected && (
         <section className="card">
           <h2 className="card__title"><span className="card__num">2</span> Draft the email</h2>
           <p className="muted small">
             To: <strong>{selected.name || selected.email}</strong>
-            {selected.role ? ` · ${selected.role}` : ""}
+            {selected.role ? ` / ${selected.role}` : ""}
           </p>
 
           {!draft && (
             <button className="btn btn--primary" onClick={generateDraft} disabled={draftState.loading}>
-              {draftState.loading ? "Writing…" : "✦ Generate draft"}
+              {draftState.loading ? "Writing..." : "✦ Generate draft"}
             </button>
           )}
           {draftState.error && <p className="error">{draftState.error}</p>}
@@ -214,14 +214,14 @@ export default function Outreach() {
                 <textarea rows={12} value={draft.body} onChange={(e) => setDraft({ ...draft, body: e.target.value })} />
               </label>
               <button className="btn btn--ghost" type="button" onClick={generateDraft} disabled={draftState.loading}>
-                {draftState.loading ? "Rewriting…" : "↻ Regenerate"}
+                {draftState.loading ? "Rewriting..." : "↻ Regenerate"}
               </button>
             </div>
           )}
         </section>
       )}
 
-      {/* STEP C — gmail */}
+      {/* STEP C - gmail */}
       {draft && (
         <section className="card">
           <h2 className="card__title"><span className="card__num">3</span> Save to Gmail</h2>
@@ -230,7 +230,7 @@ export default function Outreach() {
             <div className="gmail__connect">
               <p className="muted small">
                 Connect Gmail to save this as a draft in your account. We only request
-                permission to <strong>compose</strong> drafts — never to send.
+                permission to <strong>compose</strong> drafts - never to send.
               </p>
               <a className="btn btn--dark" href={googleLoginUrl()}>
                 Connect Gmail
@@ -239,11 +239,11 @@ export default function Outreach() {
           ) : (
             <>
               <p className="muted small">
-                Connected as <strong>{gmailEmail}</strong> ·{" "}
+                Connected as <strong>{gmailEmail}</strong> /{" "}
                 <button className="linkbtn" onClick={disconnect}>disconnect</button>
               </p>
               <button className="btn btn--primary" onClick={saveToGmail} disabled={gmailState.loading || !to.trim()}>
-                {gmailState.loading ? "Saving…" : "Create Gmail draft"}
+                {gmailState.loading ? "Saving..." : "Create Gmail draft"}
               </button>
               {gmailState.error && <p className="error">{gmailState.error}</p>}
               {gmailState.result && (

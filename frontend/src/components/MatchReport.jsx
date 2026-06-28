@@ -4,12 +4,12 @@ import Donut from "./Donut.jsx";
 
 function headlineFor(score) {
   if (score >= 80)
-    return ["Strong fit — apply with confidence.", "You clear the bar comfortably. Tighten the few gaps below to stand out."];
+    return ["Strong fit - apply with confidence.", "You clear the bar comfortably. Tighten the few gaps below to stand out."];
   if (score >= 60)
-    return ["Solid fit — worth applying, with a few sharpening moves.", "You clear the core bar. Closing the gaps below would push you into the top tier of applicants."];
+    return ["Solid fit - worth applying, with a few sharpening moves.", "You clear the core bar. Closing the gaps below would push you into the top tier of applicants."];
   if (score >= 40)
-    return ["Partial fit — close some gaps before you apply.", "There's a real foundation here, but a few requirements need addressing to be competitive."];
-  return ["Stretch fit — significant gaps to close.", "This role asks for more than the résumé currently shows. Focus on the gaps below."];
+    return ["Partial fit - close some gaps before you apply.", "There's a real foundation here, but a few requirements need addressing to be competitive."];
+  return ["Stretch fit - significant gaps to close.", "This role asks for more than the resume currently shows. Focus on the gaps below."];
 }
 
 function Bar({ label, value, tone }) {
@@ -35,6 +35,7 @@ export default function MatchReport() {
   const {
     final_score,
     embedding_score,
+    skill_score,
     llm_fit_score,
     strengths = [],
     gaps = [],
@@ -163,7 +164,7 @@ export default function MatchReport() {
             ) : (
               <p className="muted">
                 {prep === null
-                  ? "Fetching interview signals for this company…"
+                  ? "Fetching interview signals for this company..."
                   : "No interview data found for this company yet."}
               </p>
             )}
@@ -187,7 +188,7 @@ export default function MatchReport() {
           )}
 
           <div className="report__foot">
-            <span className="muted">Fit looks good — the next move is getting in front of a human.</span>
+            <span className="muted">Fit looks good - the next move is getting in front of a human.</span>
             <button className="btn btn--primary" onClick={() => setView("outreach")}>
               Draft outreach to recruiters →
             </button>
@@ -197,12 +198,15 @@ export default function MatchReport() {
         <div className="card">
           <h3 className="col__title">How the score is built</h3>
           <p className="muted breakdown__note">
-            The final score blends an objective embedding similarity (grounds the number
-            in the text) with the LLM's holistic fit judgement (adds nuance). Both are
-            shown so the result is never a black box.
+            The final score blends three independent signals, each catching a different
+            failure mode: semantic similarity (catches wholly unrelated resumes), skill
+            coverage (how many JD requirements you match), and the LLM's holistic fit
+            judgement (seniority, depth, nuance). All three are shown so the result is
+            never a black box.
           </p>
           <div className="bars">
-            <Bar label="Embedding similarity (objective)" value={embedding_score} tone="blue" />
+            <Bar label="Semantic similarity (objective)" value={embedding_score} tone="blue" />
+            <Bar label="Skill coverage (matched / total)" value={skill_score} tone="blue" />
             <Bar label="LLM fit judgement" value={llm_fit_score} tone="violet" />
             <Bar label="Final blended score" value={final_score} tone="accent" />
           </div>

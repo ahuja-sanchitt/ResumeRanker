@@ -1,10 +1,12 @@
 """Cold-email co-pilot endpoints.
 
-  POST /contacts          -> discover EM/senior-dev contacts at a company (Hunter.io)
+  POST /contacts          -> discover engineering-lead contacts at a company (Apollo.io)
   POST /cold-email/draft  -> generate a tailored email from the résumé (multipart)
   POST /gmail/draft       -> create the email as a Gmail draft (never sends)
 """
 from __future__ import annotations
+
+import logging
 
 from fastapi import APIRouter, File, Form, Header, HTTPException, Request, UploadFile
 
@@ -15,19 +17,16 @@ from app.models.schemas import (
     GmailDraftRequest,
     GmailDraftResponse,
 )
-import logging
-
 from app.services import gmail, gmail_session, llm
 from app.services.apollo import ApolloError
 from app.services.apollo import find_contacts as apollo_find_contacts
-from app.services.fallback_contacts import generate_contacts
 from app.services.hunter import domain_candidates
 from app.services.pdf_extract import PdfExtractionError, extract_text_from_pdf
 from app.services.rate_limit import limiter
 
 logger = logging.getLogger("contacts")
 
-CONTACTS_TARGET = 6
+CONTACTS_LIMIT = 6
 
 router = APIRouter(tags=["cold-email"])
 
@@ -41,26 +40,21 @@ def contacts(request: Request, req: ContactsRequest) -> ContactsResponse:
     candidates = domain_candidates(company)
     domain = candidates[0] if candidates else company.lower().replace(" ", "") + ".com"
 
-    # --- Try Apollo (real contacts, India-filtered) ---
-    apollo_contacts: list = []
+    # Real contacts only (Apollo, India-filtered). If Apollo finds none, return an
+    # empty list — the UI shows an honest empty state + manual entry. We never
+    # fabricate contacts, since their emails would be guesses that bounce.
     try:
         result = apollo_find_contacts(company, candidates)
-        apollo_contacts = result.get("contacts", [])
+        contacts_list = result.get("contacts", [])[:CONTACTS_LIMIT]
         domain = result.get("domain") or domain
-        logger.info("apollo returned %d contacts for company=%r", len(apollo_contacts), company)
+        logger.info("apollo returned %d contacts for company=%r", len(contacts_list), company)
     except ApolloError as exc:
-        if "not configured" not in str(exc).lower():
-            logger.warning("apollo failed for %r: %s", company, exc)
+        if "not configured" in str(exc).lower():
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        logger.warning("apollo failed for %r: %s", company, exc)
+        contacts_list = []
 
-    # --- Always return exactly CONTACTS_TARGET contacts ---
-    # Fill any shortfall with randomly generated ones so the user always has options.
-    shortfall = CONTACTS_TARGET - len(apollo_contacts)
-    generated = generate_contacts(domain, count=shortfall) if shortfall > 0 else []
-    if generated:
-        logger.info("contacts filling %d generated contacts for domain=%r", len(generated), domain)
-
-    final_contacts = (apollo_contacts + generated)[:CONTACTS_TARGET]
-    return ContactsResponse(company=company, domain=domain, contacts=final_contacts)
+    return ContactsResponse(company=company, domain=domain, contacts=contacts_list)
 
 
 @router.post("/cold-email/draft", response_model=ColdEmailDraftResponse)

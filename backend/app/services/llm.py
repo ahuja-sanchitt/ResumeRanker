@@ -69,13 +69,14 @@ def _as_score(value: Any) -> int:
 _ANALYZE_SYSTEM = (
     "You are a precise technical recruiter. Compare a candidate's résumé against a "
     "job description and respond ONLY with a JSON object using exactly these keys:\n"
-    '  "matched_skills": string[]   // skills/requirements in the JD that the résumé clearly demonstrates\n'
-    '  "missing_skills": string[]   // skills/requirements in the JD absent or weak in the résumé\n'
+    '  "matched_skills": string[]   // concise skill/technology labels (2-5 words max) from the JD that the résumé clearly demonstrates. e.g. "Python", "Redis", "System Design", "CI/CD", "Microservices"\n'
+    '  "missing_skills": string[]   // concise skill/technology labels (2-5 words max) from the JD absent or weak in the résumé. Same format as matched_skills.\n'
     '  "strengths": string[]        // short phrases on where the candidate is strong for THIS role\n'
     '  "gaps": string[]             // short phrases on the most important gaps\n'
     '  "feedback": string           // 2-4 sentences of concrete, actionable advice to improve the match\n'
     '  "llm_fit_score": number      // 0-100 holistic fit, considering seniority and core requirements\n'
-    "Base every judgement only on the provided text. Do not invent skills the résumé does not support."
+    "Base every judgement only on the provided text. Do not invent skills the résumé does not support. "
+    "Keep matched_skills and missing_skills as short keyword labels, never copy full JD sentences."
 )
 
 

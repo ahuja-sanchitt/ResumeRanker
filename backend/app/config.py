@@ -41,10 +41,17 @@ class Settings:
     prep_cache_ttl_seconds: int = _get_int("PREP_CACHE_TTL_SECONDS", 7 * 24 * 60 * 60)
 
     # --- Scoring ---
-    # final = embedding_weight * embedding_score + (1 - embedding_weight) * llm_score
-    embedding_weight: float = _get_float("EMBEDDING_WEIGHT", 0.6)
+    # Three independent signals, each catching a different failure mode:
+    #   embedding  -> catches wholly unrelated résumés (semantic similarity of full docs)
+    #   skill      -> matched / (matched + missing) skill coverage (grounded in extraction)
+    #   llm        -> holistic fit (seniority, depth, soft requirements)
+    # final = embedding_weight*embedding + skill_weight*skill + llm_weight*llm
+    # Weights are normalized at use, so they don't have to sum to exactly 1.0.
+    embedding_weight: float = _get_float("EMBEDDING_WEIGHT", 0.2)
+    skill_weight: float = _get_float("SKILL_WEIGHT", 0.3)
+    llm_weight: float = _get_float("LLM_WEIGHT", 0.5)
     # OpenAI embeddings are anisotropic: even unrelated texts rarely score below
-    # ~0.6 cosine, and strong matches top out around ~0.9. Linearly rescale that
+    # ~0.4 cosine, and strong matches top out around ~0.9. Linearly rescale that
     # band to 0-100 so the score is meaningfully spread, then clamp.
     sim_floor: float = _get_float("SIM_FLOOR", 0.40)
     sim_ceil: float = _get_float("SIM_CEIL", 0.90)
