@@ -19,7 +19,7 @@ export default function Topbar() {
           <p className="crumbs">
             {crumbs.map((c, i) => (
               <span key={i}>
-                {i > 0 && <span className="crumbs__sep">·</span>}
+                {i > 0 && <span className="crumbs__sep">/</span>}
                 <span className={i === 0 ? "crumbs__co" : ""}>{c}</span>
               </span>
             ))}

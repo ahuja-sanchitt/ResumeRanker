@@ -8,7 +8,8 @@ from pydantic import BaseModel, Field
 
 class AnalyzeResponse(BaseModel):
     final_score: int = Field(..., ge=0, le=100, description="Blended 0-100 match score")
-    embedding_score: int = Field(..., ge=0, le=100, description="Objective cosine-similarity score")
+    embedding_score: int = Field(..., ge=0, le=100, description="Semantic similarity of full résumé vs JD")
+    skill_score: int = Field(..., ge=0, le=100, description="Skill coverage: matched / (matched + missing) * 100")
     llm_fit_score: int = Field(..., ge=0, le=100, description="LLM's holistic fit judgement")
     matched_skills: list[str] = Field(default_factory=list)
     missing_skills: list[str] = Field(default_factory=list)

@@ -29,7 +29,7 @@ export default function NewAnalysis() {
     if (!f) return;
     const isPdf = f.type === "application/pdf" || f.name.toLowerCase().endsWith(".pdf");
     if (!isPdf) {
-      setError("Please upload a PDF résumé.");
+      setError("Please upload a PDF resume.");
       return;
     }
     setError("");
@@ -67,16 +67,16 @@ export default function NewAnalysis() {
   return (
     <form className="analysis" onSubmit={onSubmit}>
       <p className="lede">
-        Drop in your résumé and the job description. Lodestar reads both, scores the
+        Drop in your resume and the job description. Lodestar reads both, scores the
         fit, and shows you exactly where to sharpen before you apply. Takes about ten
         seconds.
       </p>
 
       <div className="cards2">
-        {/* Résumé card */}
+        {/* Resume card */}
         <section className="card">
           <h2 className="card__title">
-            <span className="card__num">1</span> Your résumé
+            <span className="card__num">1</span> Your resume
           </h2>
 
           <div
@@ -90,7 +90,7 @@ export default function NewAnalysis() {
           >
             <div className="dropzone__icon">↑</div>
             <p className="dropzone__title">Drag your PDF here</p>
-            <p className="dropzone__sub">or browse — PDF up to 10 MB</p>
+            <p className="dropzone__sub">or browse - PDF up to 10 MB</p>
             <button
               type="button"
               className="btn btn--dark"
@@ -113,7 +113,7 @@ export default function NewAnalysis() {
               <span className="filechip__meta">
                 <span className="filechip__name">{file.name}</span>
                 <span className="filechip__sub">
-                  {(file.size / 1024).toFixed(0)} KB · ready
+                  {(file.size / 1024).toFixed(0)} KB / ready
                 </span>
               </span>
               <span className="filechip__check">✓</span>
@@ -131,12 +131,12 @@ export default function NewAnalysis() {
             rows={10}
             value={jd}
             onChange={(e) => setJd(e.target.value)}
-            placeholder="Paste the full job description here…"
+            placeholder="Paste the full job description here..."
           />
         </section>
       </div>
 
-      {/* Role context — drives the breadcrumb, interview prep, and outreach */}
+      {/* Role context - drives the breadcrumb, interview prep, and outreach */}
       <section className="card">
         <h2 className="card__title">
           <span className="card__num">3</span> Role details
@@ -157,7 +157,7 @@ export default function NewAnalysis() {
 
       <div className="analysis__foot">
         <button className="btn btn--primary btn--lg" disabled={!canSubmit}>
-          {loading ? "Analyzing…" : "✦ Analyze match"}
+          {loading ? "Analyzing..." : "✦ Analyze match"}
         </button>
       </div>
     </form>
